@@ -22,6 +22,7 @@ import type { CronJobContext, CronJobHandler } from "../src/core/types.js";
   description: "Backup database mỗi 15 phút",
   schedule: "*/15 * * * *",
   enabled: true,
+  parallel: false,
 })
 export class BackupDatabaseJob implements CronJobHandler {
   async execute(context: CronJobContext): Promise<void> {
@@ -34,6 +35,8 @@ export class BackupDatabaseJob implements CronJobHandler {
 Job id được lấy từ tên file: `backup-database.cronjob.ts` trở thành `backup-database`.
 
 `enabled` mặc định là `true`. Đặt `enabled: false` để tạm ngừng job; job vẫn được validate và hiển thị trong `list`, nhưng Task Scheduler task tương ứng sẽ không được tạo hoặc sẽ bị xóa khi chạy reconciliation.
+
+`parallel` mặc định là `false`. Khi `parallel: false`, job mới sẽ bị skip nếu instance trước đó chưa hoàn tất. Đặt `parallel: true` nếu muốn cho phép nhiều process của cùng job chạy song song; Task Scheduler sẽ dùng `MultipleInstancesPolicy=Parallel` cho job đó.
 
 Cậu cũng có thể disable job bằng cách thêm `_` ở đầu tên file: `_backup-database.cronjob.ts`. Job id vẫn là `backup-database`, vì vậy `npm run start` sẽ xóa đúng task cũ `SimpleCronJob\backup-database` nếu task đó đang tồn tại.
 

@@ -2,6 +2,7 @@ export interface CronJobOptions {
   description: string;
   schedule: string;
   enabled?: boolean;
+  parallel?: boolean;
 }
 
 export interface CronJobContext {
@@ -37,5 +38,6 @@ export interface RegisteredCronJob {
   description: string;
   schedule: string;
   enabled: boolean;
+  parallel: boolean;
   constructor: CronJobConstructor;
 }

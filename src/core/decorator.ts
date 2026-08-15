@@ -5,7 +5,7 @@ export const CRONJOB_META = "__simple_cronjob_meta__";
 export function CronJob(options: CronJobOptions): ClassDecorator {
   return (target) => {
     Object.defineProperty(target, CRONJOB_META, {
-      value: { ...options, enabled: options.enabled ?? true },
+      value: { ...options, enabled: options.enabled ?? true, parallel: options.parallel ?? false },
       enumerable: false,
       writable: false,
     });

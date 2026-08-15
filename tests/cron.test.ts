@@ -6,6 +6,7 @@ import { CronExpression } from "../src/core/cron.js";
 import { CronJob, getCronJobOptions } from "../src/core/decorator.js";
 import { parseCronJobFileName } from "../src/core/discovery.js";
 import { JobLogger } from "../src/core/logger.js";
+import { JobLock } from "../src/core/job-lock.js";
 
 describe("CronExpression", () => {
   it("matches lists, ranges and steps", () => {
@@ -28,7 +29,15 @@ describe("CronExpression", () => {
     class DisabledJob {}
 
     expect(getCronJobOptions(EnabledJob as never)?.enabled).toBe(true);
+    expect(getCronJobOptions(EnabledJob as never)?.parallel).toBe(false);
     expect(getCronJobOptions(DisabledJob as never)?.enabled).toBe(false);
+  });
+
+  it("preserves parallel true metadata", () => {
+    @CronJob({ description: "Parallel", schedule: "* * * * *", parallel: true })
+    class ParallelJob {}
+
+    expect(getCronJobOptions(ParallelJob as never)?.parallel).toBe(true);
   });
 
   it("treats a leading underscore as a disabled filename convention", () => {
@@ -47,6 +56,20 @@ describe("CronExpression", () => {
     const date = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
     const content = await readFile(join(root, "logs", "backup", month, `log - backup - ${date}.txt`), "utf8");
     expect(content).toMatch(/\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3} [+-]\d{2}:\d{2} INF\] Backup completed \{JobId="backup", Count=2\}/u);
+    await rm(root, { recursive: true, force: true });
+  });
+
+  it("allows only one process lock owner at a time", async () => {
+    const root = await mkdtemp(join(tmpdir(), "simple-cronjob-lock-"));
+    const first = new JobLock(root, "backup");
+    const second = new JobLock(root, "backup");
+    const firstHandle = await first.acquire();
+    expect(firstHandle).toBeDefined();
+    expect(await second.acquire()).toBeUndefined();
+    await firstHandle!.release();
+    const secondHandle = await second.acquire();
+    expect(secondHandle).toBeDefined();
+    await secondHandle!.release();
     await rm(root, { recursive: true, force: true });
   });
 });

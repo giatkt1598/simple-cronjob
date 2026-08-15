@@ -54,7 +54,7 @@ export class JobLogger implements CronJobLogger {
       this.jobId,
       formatMonth(now),
     );
-    const filePath = join(directory, `${this.jobId} - ${formatDate(now)}.log`);
+    const filePath = join(directory, `${formatDate(now)}.log`);
     this.pendingWrite = this.pendingWrite.then(
       async () => {
         await mkdir(directory, { recursive: true });

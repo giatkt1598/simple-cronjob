@@ -31,6 +31,7 @@ export async function discoverCronJobs(directory: string): Promise<RegisteredCro
       description: options.description.trim(),
       schedule: options.schedule.trim(),
       enabled: !fileInfo.disabled && options.enabled !== false,
+      parallel: options.parallel === true,
       constructor,
     });
   }
