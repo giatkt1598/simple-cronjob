@@ -322,3 +322,7 @@ This expression matches every five minutes during hours 12 and 13 on Mondays and
 - For production deployments, consider moving passwords, API keys, and webhook URLs to a protected configuration or secret-management system.
 - Ensure the project and its build output are writable only by trusted users.
 - Review command execution and filesystem operations in each job before registering it in Task Scheduler.
+
+## License
+
+This project is licensed under the [MIT License](LICENSE).
