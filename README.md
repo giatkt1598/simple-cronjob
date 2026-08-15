@@ -184,6 +184,122 @@ The current utility set includes:
 - `getEnv` and `requireEnv`
 - `isWindows`
 
+## Sample Jobs and Services
+
+The repository includes reusable examples in `src/cronjobs/samples/`. These samples are disabled by default because they can send external notifications or create database backups.
+
+To enable a sample, remove the leading `_` from its filename, edit the `const` configuration values at the top of the job file, and run:
+
+```powershell
+npm run start
+```
+
+Available samples include:
+
+- `_postgres-backup.cronjob.ts`: creates a daily PostgreSQL custom-format backup with `pg_dump`.
+- `_email-reminder.cronjob.ts`: sends a scheduled email through SMTP.
+- `_slack-notification.cronjob.ts`: sends a scheduled Slack Incoming Webhook message.
+- `_ms-teams-notification.cronjob.ts`: sends a scheduled Microsoft Teams webhook message.
+- `_service-health-check.cronjob.ts`: checks an HTTP health endpoint every five minutes and sends alerts when the check fails.
+
+Reusable service implementations are exported from `src/services/index.ts`:
+
+- `SmtpEmailService`
+- `SlackService`
+- `MsTeamsService`
+- `PostgresBackupService`
+- `HealthCheckService`
+
+### PostgreSQL Backup Configuration
+
+The PostgreSQL sample requires the `pg_dump` executable to be installed and available on `PATH`.
+
+Edit `POSTGRES_CONFIG` in `_postgres-backup.cronjob.ts`:
+
+```ts
+const POSTGRES_CONFIG: PostgresBackupConfig = {
+  host: "localhost",
+  port: 5432,
+  database: "app",
+  username: "postgres",
+  password: "replace-with-database-password",
+  outputDirectory: "backups/postgres",
+  pgDumpPath: "pg_dump",
+  timeoutMs: 10 * 60 * 1000,
+};
+```
+
+The password is passed to `pg_dump` through the child process environment and is not included in the command arguments. The `pg_dump` executable must be installed and available on `PATH`, or `pgDumpPath` can point to its full path.
+
+### SMTP Email Configuration
+
+The email samples use the following defaults, suitable for the local SMTP server supplied for this project:
+
+```ts
+{
+  host: "localhost",
+  port: 11025,
+  secure: false,
+  ignoreTLS: true,
+}
+```
+
+Edit `SMTP_CONFIG` and `EMAIL_CONFIG` in `_email-reminder.cronjob.ts`:
+
+```ts
+const SMTP_CONFIG: SmtpEmailConfig = {
+  host: "localhost",
+  port: 11025,
+  secure: false,
+  ignoreTLS: true,
+};
+
+const EMAIL_CONFIG = {
+  from: "cronjob@localhost",
+  to: "recipient@example.com",
+  subject: "Scheduled reminder",
+  text: "This is an automated reminder.",
+};
+```
+
+If the SMTP server requires authentication, add `user` and `password` to `SMTP_CONFIG`.
+
+### Slack and Microsoft Teams Configuration
+
+Edit the constants at the top of the corresponding sample before enabling it:
+
+```ts
+const SLACK_WEBHOOK_URL = "https://hooks.slack.com/services/replace/with/webhook";
+const MESSAGE = "Scheduled Slack notification";
+
+const MS_TEAMS_WEBHOOK_URL = "https://replace-with-microsoft-teams-webhook";
+const MESSAGE = "Scheduled Microsoft Teams notification";
+```
+
+### Health Check and Failure Alerts
+
+The health-check sample requires an HTTP endpoint. It accepts status `200` by default and can notify any configured combination of Slack, Microsoft Teams, and email.
+
+Edit `HEALTH_CHECK_CONFIG`, `SMTP_CONFIG`, and `ALERT_CONFIG` in `_service-health-check.cronjob.ts`:
+
+```ts
+const HEALTH_CHECK_CONFIG = {
+  url: "http://localhost:8080/health",
+  timeoutMs: 10_000,
+  expectedStatuses: [200, 204],
+};
+
+const ALERT_CONFIG = {
+  slackWebhookUrl: "https://hooks.slack.com/services/replace/with/webhook",
+  msTeamsWebhookUrl: "https://replace-with-microsoft-teams-webhook",
+  emailTo: "on-call@example.com",
+  emailFrom: "cronjob@localhost",
+  emailSubject: "Service health check failed",
+};
+```
+
+If the health check fails, the job logs the original failure, attempts each configured notification channel independently, logs notification failures, and then fails the job so the incident remains visible in Task Scheduler and the job log.
+
 ## Cron Expression Syntax
 
 Cron fields use the following order:
@@ -202,7 +318,7 @@ This expression matches every five minutes during hours 12 and 13 on Mondays and
 
 ## Security and Configuration Notes
 
-- Do not hardcode passwords, API keys, or other secrets in job source files.
-- Use environment variables or project configuration for secrets.
+- The sample jobs intentionally use direct `const` configuration values in each `.cronjob.ts` file so they are easy to copy and customize.
+- For production deployments, consider moving passwords, API keys, and webhook URLs to a protected configuration or secret-management system.
 - Ensure the project and its build output are writable only by trusted users.
 - Review command execution and filesystem operations in each job before registering it in Task Scheduler.

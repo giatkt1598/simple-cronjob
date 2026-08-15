@@ -17,6 +17,7 @@
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
+    "@types/nodemailer": "^8.0.1",
     "@types/shelljs": "^0.10.0",
     "esbuild": "^0.25.0",
     "typescript": "^6.0.0",
@@ -24,6 +25,7 @@
   },
   "dependencies": {
     "dayjs": "^1.11.21",
+    "nodemailer": "^9.0.5",
     "shelljs": "^0.10.0"
   }
 }
