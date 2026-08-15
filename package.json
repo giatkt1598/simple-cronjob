@@ -1,0 +1,21 @@
+{
+  "name": "simple-cronjob",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "build": "npm run typecheck && node esbuild.config.mjs",
+    "start": "npm run build && node dist/index.js register",
+    "list": "npm run build && node dist/index.js list",
+    "validate": "npm run build && node dist/index.js validate",
+    "test": "vitest run"
+  },
+  "engines": { "node": ">=18" },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "esbuild": "^0.25.0",
+    "typescript": "^6.0.0",
+    "vitest": "^3.0.0"
+  }
+}
