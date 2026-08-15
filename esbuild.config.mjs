@@ -13,7 +13,7 @@ await build({
   format: "esm",
   target: "node18",
   packages: "external",
-  sourcemap: true,
+  sourcemap: false,
   logLevel: "info",
 });
 
@@ -28,6 +28,6 @@ await build({
   format: "esm",
   target: "node18",
   packages: "external",
-  sourcemap: true,
+  sourcemap: false,
   logLevel: "info",
 });
