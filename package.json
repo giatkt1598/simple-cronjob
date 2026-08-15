@@ -16,11 +16,13 @@
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
+    "@types/shelljs": "^0.10.0",
     "esbuild": "^0.25.0",
     "typescript": "^6.0.0",
     "vitest": "^3.0.0"
   },
   "dependencies": {
-    "dayjs": "^1.11.21"
+    "dayjs": "^1.11.21",
+    "shelljs": "^0.10.0"
   }
 }

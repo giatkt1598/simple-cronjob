@@ -73,6 +73,28 @@ node dist/index.js run --job hello
 
 `npm run start` sẽ type-check, build, discover job và reconcile các task có prefix `SimpleCronJob` trong Windows Task Scheduler. Mỗi task được trigger mỗi phút; application tự kiểm tra 5-field cron expression trước khi execute.
 
+## Utilities
+
+Các utility dùng chung được export từ `src/utilities/index.ts`:
+
+```ts
+import {
+  requestJson,
+  retry,
+  runCommand,
+  writeJson,
+} from "../utilities/index.js";
+
+const command = await runCommand("giatk -v");
+const response = await retry(
+  () => requestJson("https://example.com/health"),
+  { maxAttempts: 3, delayMs: 1_000 },
+);
+await writeJson("tmp/result.json", { command, status: response.status });
+```
+
+Utility v1 gồm `runCommand`, `assertCommandSuccess`, `retry`, `withTimeout`, `requestText`, `requestJson`, `ensureDirectory`, `fileExists`, `readJson`, `writeJson`, `getEnv`, `requireEnv` và `isWindows`.
+
 Task Scheduler chạy qua `wscript.exe` hidden launcher để Node job chạy nền và không bật console window. Launcher vẫn giữ nguyên user context, working directory và exit code của Node process.
 
 Task chạy bằng user hiện tại ở chế độ logged-on. Không hardcode secrets trong source; dùng environment variables hoặc configuration của project.
