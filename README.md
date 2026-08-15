@@ -1,25 +1,45 @@
 # Simple Cronjob
 
-Tool TypeScript để chạy các công việc tùy ý trên Windows thông qua Task Scheduler.
+Simple Cronjob is a TypeScript-based Windows automation tool for running scheduled jobs through Windows Task Scheduler.
 
-## Cài đặt
+A cron job is a regular TypeScript class. You describe its schedule and runtime behavior with the `@CronJob` decorator, then run the application to discover, validate, and reconcile the jobs registered in Windows Task Scheduler.
+
+## Features
+
+- Define jobs as TypeScript classes.
+- Use familiar five-field cron expressions.
+- Register and reconcile jobs in Windows Task Scheduler.
+- Run arbitrary Node.js and CLI automation, including database backups, HTTP calls, notifications, and file operations.
+- Support enabled/disabled jobs and filename-based disabling.
+- Prevent overlapping executions by default with a process lock.
+- Optionally allow parallel executions for a job.
+- Configure optional `startAt` and `stopAt` boundaries.
+- Write Serilog-style plain-text logs per job and per day.
+- Trigger a job manually without waiting for its cron schedule.
+- Reuse common command, filesystem, HTTP, environment, and retry utilities.
+
+## Requirements
+
+- Windows with Windows Task Scheduler.
+- Node.js 18 or later.
+- npm.
+
+## Installation
 
 ```powershell
 npm install
 ```
 
-Yêu cầu Node.js 18+ và Windows Task Scheduler.
+## Creating a Cron Job
 
-## Tạo job mới
-
-Tạo file mới trong `src/cronjobs/` với suffix `.cronjob.ts`:
+Create a new file in `src/cronjobs/` using the `.cronjob.ts` suffix. Each file must export exactly one class decorated with `@CronJob`.
 
 ```ts
 import { CronJob } from "../core/decorator.js";
 import type { CronJobContext, CronJobHandler } from "../core/types.js";
 
 @CronJob({
-  description: "Backup database mỗi 15 phút",
+  description: "Back up the database every 15 minutes.",
   schedule: "*/15 * * * *",
   enabled: true,
   parallel: false,
@@ -28,56 +48,112 @@ import type { CronJobContext, CronJobHandler } from "../core/types.js";
 })
 export class BackupDatabaseJob implements CronJobHandler {
   async execute(context: CronJobContext): Promise<void> {
-    context.logger.info("Thực hiện backup...");
-    // Dùng child_process, database client, HTTP client... tùy nhu cầu.
+    context.logger.info("Database backup started.");
+    // Use child_process, a database client, an HTTP client, or any other
+    // Node.js-compatible library required by the job.
   }
 }
 ```
 
-Job id được lấy từ tên file: `backup-database.cronjob.ts` trở thành `backup-database`.
+The job ID is derived from the filename. For example:
 
-`enabled` mặc định là `true`. Đặt `enabled: false` để tạm ngừng job; job vẫn được validate và hiển thị trong `list`, nhưng Task Scheduler task tương ứng sẽ không được tạo hoặc sẽ bị xóa khi chạy reconciliation.
+```text
+backup-database.cronjob.ts -> backup-database
+```
 
-`parallel` mặc định là `false`. Khi `parallel: false`, job mới sẽ bị skip nếu instance trước đó chưa hoàn tất. Đặt `parallel: true` nếu muốn cho phép nhiều process của cùng job chạy song song; Task Scheduler sẽ dùng `MultipleInstancesPolicy=Parallel` cho job đó.
+Each job file must contain exactly one `@CronJob` class. The job description and cron expression are validated during discovery.
 
-`startAt` không bắt buộc và dùng format `YYYY-MM-DD HH:mm:ss` theo local timezone của Windows. Trước thời điểm này, Task Scheduler không trigger job và lệnh chạy thủ công cũng không execute job.
+### Disabling a Job
 
-`stopAt` không bắt buộc và dùng cùng format. Khi đến hoặc quá thời điểm này, job không execute nữa; task tương ứng sẽ được remove ở lần trigger kế tiếp hoặc trong lần `npm run start` tiếp theo. `stopAt` phải sau `startAt` nếu cả hai cùng được khai báo. Source file không bị xóa.
+`enabled` defaults to `true`. Set `enabled: false` to disable a job while keeping it visible to validation and listing commands.
 
-Cậu cũng có thể disable job bằng cách thêm `_` ở đầu tên file: `_backup-database.cronjob.ts`. Job id vẫn là `backup-database`, vì vậy `npm run start` sẽ xóa đúng task cũ `SimpleCronJob\backup-database` nếu task đó đang tồn tại.
+You can also disable a job by prefixing its filename with `_`:
 
-## Logger
+```text
+_backup-database.cronjob.ts
+```
 
-Mỗi job nhận được `context.logger`. Logger chỉ ghi vào file plain text theo format Serilog; job chạy trong Task Scheduler sẽ không tạo log output trên console:
+The job ID remains `backup-database`. When reconciliation runs, the corresponding Task Scheduler task is removed or is not created.
+
+### Preventing Overlapping Runs
+
+`parallel` defaults to `false`. With the default setting, a new execution is skipped while the previous process for the same job is still running.
+
+Set `parallel: true` to allow multiple processes of the same job to run concurrently. Task Scheduler is configured with a parallel multiple-instance policy for that job.
+
+### Start and Stop Boundaries
+
+`startAt` and `stopAt` are optional and use the following local Windows time format:
+
+```text
+YYYY-MM-DD HH:mm:ss
+```
+
+Before `startAt`, the job does not execute. At or after `stopAt`, the job does not execute and its Task Scheduler task is removed during the next reconciliation or trigger. If both values are specified, `stopAt` must be later than `startAt`.
+
+## Commands
+
+```powershell
+# Validate all discovered cron jobs.
+npm run validate
+
+# List discovered jobs and their configuration.
+npm run list
+
+# Build the project and register jobs in Windows Task Scheduler.
+npm run start
+
+# Build the project and trigger one job immediately.
+npm run trigger-job -- giatk-version
+
+# Run a compiled job using the application entry point.
+node dist/index.js run --job hello
+
+# Trigger a compiled job immediately.
+node dist/index.js trigger giatk-version
+```
+
+`npm run start` type-checks the project, builds the application, discovers cron jobs, and reconciles tasks with the `SimpleCronJob` prefix in Windows Task Scheduler.
+
+The current scheduler creates a Task Scheduler trigger every minute. The application evaluates the five-field cron expression before executing the job.
+
+The `trigger-job` command bypasses the cron schedule, but it still respects process locking and `parallel`. A job past its `stopAt` value is not executed.
+
+## Windows Task Scheduler
+
+Jobs run under the current logged-on Windows user. The scheduler uses a hidden `wscript.exe` launcher so Node.js jobs can run in the background without opening a console window. The launcher preserves the user context, working directory, and Node.js process exit code.
+
+After adding or changing a cron job, run `npm run start` to reconcile the registered tasks.
+
+### Opening Task Scheduler
+
+![Opening Task Scheduler from Windows Search](docs/screenshots/open-windows-task-scheduler.png)
+
+### Registered SimpleCronJob Tasks
+
+![Registered SimpleCronJob tasks in Windows Task Scheduler](docs/screenshots/windows-task-scheduler.png)
+
+## Logging
+
+Every job receives a `context.logger`. Logs are written to plain-text files using a Serilog-style format. Scheduled jobs do not write job output to the console.
+
+Example:
 
 ```text
 [2026-08-15 20:07:03.829] [INFO] Job completed {JobId="hello"}
 ```
 
-Log được lưu tại:
+Log files are stored using the following structure:
 
 ```text
-logs/<job-name>/YYYY-MM/log - <job-name> - YYYY-MM-DD.txt
+logs/<job-id>/YYYY-MM/YYYY-MM-DD.log
 ```
 
-Các level được hỗ trợ: `trace`, `debug`, `info`, `warn`, `error`, `fatal`. Timestamp và thư mục ngày/tháng dùng local timezone của Windows.
+Supported log levels are `trace`, `debug`, `info`, `warn`, `error`, and `fatal`. Timestamps and directory names use the local Windows timezone.
 
-## Commands
+## Shared Utilities
 
-```powershell
-npm run validate
-npm run list
-npm run start
-npm run trigger-job -- giatk-version
-node dist/index.js run --job hello
-node dist/index.js trigger giatk-version
-```
-
-`npm run start` sẽ type-check, build, discover job và reconcile các task có prefix `SimpleCronJob` trong Windows Task Scheduler. Mỗi task được trigger mỗi phút; application tự kiểm tra 5-field cron expression trước khi execute.
-
-## Utilities
-
-Các utility dùng chung được export từ `src/utilities/index.ts`:
+Common utilities are exported from `src/utilities/index.ts`:
 
 ```ts
 import {
@@ -92,15 +168,41 @@ const response = await retry(
   () => requestJson("https://example.com/health"),
   { maxAttempts: 3, delayMs: 1_000 },
 );
-await writeJson("tmp/result.json", { command, status: response.status });
+
+await writeJson("tmp/result.json", {
+  command,
+  status: response.status,
+});
 ```
 
-Utility v1 gồm `runCommand`, `assertCommandSuccess`, `retry`, `withTimeout`, `requestText`, `requestJson`, `ensureDirectory`, `fileExists`, `readJson`, `writeJson`, `getEnv`, `requireEnv` và `isWindows`.
+The current utility set includes:
 
-Task Scheduler chạy qua `wscript.exe` hidden launcher để Node job chạy nền và không bật console window. Launcher vẫn giữ nguyên user context, working directory và exit code của Node process.
+- `runCommand` and `assertCommandSuccess`
+- `retry` and `withTimeout`
+- `requestText` and `requestJson`
+- `ensureDirectory`, `fileExists`, `readJson`, and `writeJson`
+- `getEnv` and `requireEnv`
+- `isWindows`
 
-`trigger-job` dùng để chạy thủ công ngay lập tức và bỏ qua cron schedule hiện tại. Job vẫn dùng process lock/`parallel`; job đã quá `stopAt` sẽ không được chạy.
+## Cron Expression Syntax
 
-Task chạy bằng user hiện tại ở chế độ logged-on. Không hardcode secrets trong source; dùng environment variables hoặc configuration của project.
+Cron fields use the following order:
 
-Cron fields theo thứ tự: `minute hour day-of-month month day-of-week`. Hỗ trợ `*`, list, range và step, ví dụ `*/5 12-13 * * 1,3`.
+```text
+minute hour day-of-month month day-of-week
+```
+
+The parser supports wildcards (`*`), lists, ranges, and steps. For example:
+
+```text
+*/5 12-13 * * 1,3
+```
+
+This expression matches every five minutes during hours 12 and 13 on Mondays and Wednesdays.
+
+## Security and Configuration Notes
+
+- Do not hardcode passwords, API keys, or other secrets in job source files.
+- Use environment variables or project configuration for secrets.
+- Ensure the project and its build output are writable only by trusted users.
+- Review command execution and filesystem operations in each job before registering it in Task Scheduler.
