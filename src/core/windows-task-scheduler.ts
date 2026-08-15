@@ -11,6 +11,7 @@ const execFileAsync = promisify(execFile);
 const TASK_PREFIX = "\\SimpleCronJob\\";
 
 export interface TaskScheduler {
+  /** Reconciles the desired cron jobs with managed Windows tasks. */
   reconcile(
     jobs: RegisteredCronJob[],
     projectRoot: string,
@@ -18,6 +19,7 @@ export interface TaskScheduler {
   ): Promise<void>;
 }
 
+/** Windows Task Scheduler adapter used by the application registration flow. */
 export class WindowsTaskScheduler implements TaskScheduler {
   async reconcile(
     jobs: RegisteredCronJob[],
@@ -45,6 +47,7 @@ export class WindowsTaskScheduler implements TaskScheduler {
     }
   }
 
+  /** Removes one managed task by cron job ID when it exists. */
   async remove(jobId: string): Promise<void> {
     if (process.platform !== "win32") return;
     await this.delete(`${TASK_PREFIX}${jobId}`, true);

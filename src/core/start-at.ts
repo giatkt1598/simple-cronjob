@@ -5,6 +5,7 @@ dayjs.extend(customParseFormat);
 
 export const START_AT_FORMAT = "YYYY-MM-DD HH:mm:ss";
 
+/** Validates and normalizes a local Windows time boundary. */
 export function normalizeStartAt(value: string | undefined): string | undefined {
   if (value === undefined) return undefined;
   const parsed = dayjs(value, START_AT_FORMAT, true);
@@ -12,6 +13,7 @@ export function normalizeStartAt(value: string | undefined): string | undefined 
   return parsed.format(START_AT_FORMAT);
 }
 
+/** Parses a normalized local Windows time boundary with strict dayjs parsing. */
 export function parseStartAt(value: string): Dayjs {
   return dayjs(value, START_AT_FORMAT, true);
 }

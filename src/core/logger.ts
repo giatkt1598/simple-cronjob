@@ -4,6 +4,7 @@ import type { CronJobLogger, LogProperties } from "./types.js";
 
 type LogLevel = "TRACE" | "DEBUG" | "INFO" | "WARN" | "ERROR" | "FATAL";
 
+/** Appends scoped, Serilog-style plain-text entries to the job log file. */
 export class JobLogger implements CronJobLogger {
   private pendingWrite: Promise<void> = Promise.resolve();
 
@@ -36,6 +37,7 @@ export class JobLogger implements CronJobLogger {
     this.write("FATAL", message, error, properties);
   }
 
+  /** Waits for all log entries queued by this logger to be written. */
   async flush(): Promise<void> {
     await this.pendingWrite;
   }

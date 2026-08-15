@@ -11,10 +11,13 @@ interface LockMetadata {
 }
 
 export interface JobLockHandle {
+  /** Indicates that an abandoned lock file was removed before acquisition. */
   staleRecovered: boolean;
+  /** Releases the lock only when this handle still owns it. */
   release(): Promise<void>;
 }
 
+/** File-based process lock used to prevent overlapping job executions. */
 export class JobLock {
   private readonly lockPath: string;
 
@@ -22,6 +25,7 @@ export class JobLock {
     this.lockPath = join(projectRoot, "logs", ".locks", `${jobId}.lock`);
   }
 
+  /** Acquires the lock, or returns `undefined` when another process owns it. */
   async acquire(): Promise<JobLockHandle | undefined> {
     await mkdir(dirname(this.lockPath), { recursive: true });
     let staleRecovered = false;

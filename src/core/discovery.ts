@@ -6,6 +6,7 @@ import { getCronJobOptions } from "./decorator.js";
 import { normalizeStartAt, parseStartAt } from "./start-at.js";
 import type { CronJobConstructor, RegisteredCronJob } from "./types.js";
 
+/** Discovers, imports, and validates all cron job modules in a directory. */
 export async function discoverCronJobs(directory: string): Promise<RegisteredCronJob[]> {
   const files = (await readdir(directory, { withFileTypes: true }))
     .filter((entry) => entry.isFile() && /\.cronjob\.(js|ts)$/u.test(entry.name))
@@ -46,6 +47,7 @@ export async function discoverCronJobs(directory: string): Promise<RegisteredCro
   return jobs;
 }
 
+/** Parses a cron job filename and applies the leading-underscore convention. */
 export function parseCronJobFileName(fileName: string): { id: string; disabled: boolean } {
   const name = basename(fileName).replace(/\.cronjob\.(?:js|ts)$/u, "");
   const disabled = name.startsWith("_");

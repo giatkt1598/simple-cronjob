@@ -6,6 +6,7 @@ import type { CronJobLogger, RegisteredCronJob } from "./types.js";
 
 export type RunJobResult = "completed" | "skipped";
 
+/** Determines whether a job should execute at the supplied local time. */
 export function shouldRun(job: RegisteredCronJob, now: Date): boolean {
   if (job.startAt && dayjsIsBeforeStartAt(job.startAt, now)) return false;
   if (job.stopAt && !parseStartAt(job.stopAt).isAfter(now)) return false;
@@ -16,6 +17,7 @@ function dayjsIsBeforeStartAt(startAt: string, now: Date): boolean {
   return parseStartAt(startAt).isAfter(now);
 }
 
+/** Runs one job instance with optional process locking and scoped logging. */
 export async function runJob(job: RegisteredCronJob, projectRoot: string, scheduledAt = new Date(), logger?: CronJobLogger): Promise<RunJobResult> {
   const activeLogger = logger ?? new JobLogger(projectRoot, job.id);
   const lockHandle = job.parallel ? undefined : await new JobLock(projectRoot, job.id).acquire();

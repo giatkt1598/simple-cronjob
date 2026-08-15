@@ -6,6 +6,7 @@ const FIELD_RANGES = [
   [0, 6],
 ] as const;
 
+/** Parses and evaluates the supported five-field cron expression syntax. */
 export class CronExpression {
   private readonly fields: Set<number>[];
 
@@ -17,6 +18,7 @@ export class CronExpression {
     this.fields = parts.map((part, index) => parseField(part, FIELD_RANGES[index]?.[0] ?? 0, FIELD_RANGES[index]?.[1] ?? 0));
   }
 
+  /** Returns whether the expression matches the local date and time. */
   matches(date: Date): boolean {
     const [minutes, hours, days, months, weekdays] = this.fields;
     return minutes!.has(date.getMinutes())
