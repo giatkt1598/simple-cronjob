@@ -17,9 +17,31 @@ describe("CronExpression", () => {
     expect(cron.matches(new Date(2026, 7, 17, 12, 11))).toBe(false);
   });
 
+  it("uses OR semantics when both day fields are restricted", () => {
+    const cron = new CronExpression("0 9 1 * 1");
+    expect(cron.matches(new Date(2026, 7, 1, 9, 0))).toBe(true);
+    expect(cron.matches(new Date(2026, 7, 17, 9, 0))).toBe(true);
+    expect(cron.matches(new Date(2026, 7, 2, 9, 0))).toBe(false);
+  });
+
+  it("uses the restricted day field when the other day field is a wildcard", () => {
+    expect(new CronExpression("0 9 * * 1").matches(new Date(2026, 7, 17, 9, 0))).toBe(true);
+    expect(new CronExpression("0 9 * * 1").matches(new Date(2026, 7, 16, 9, 0))).toBe(false);
+    expect(new CronExpression("0 9 1 * *").matches(new Date(2026, 7, 1, 9, 0))).toBe(true);
+    expect(new CronExpression("0 9 1 * *").matches(new Date(2026, 7, 2, 9, 0))).toBe(false);
+  });
+
+  it("accepts both 0 and 7 as Sunday", () => {
+    const sunday = new Date(2026, 7, 2, 9, 0);
+    expect(new CronExpression("0 9 * * 0").matches(sunday)).toBe(true);
+    expect(new CronExpression("0 9 * * 7").matches(sunday)).toBe(true);
+    expect(new CronExpression("0 9 * * 6-7").matches(sunday)).toBe(true);
+  });
+
   it("rejects malformed expressions", () => {
     expect(() => new CronExpression("* * * *")).toThrow();
     expect(() => new CronExpression("61 * * * *")).toThrow();
+    expect(() => new CronExpression("* * * * 8")).toThrow();
   });
 
   it("defaults enabled to true and preserves disabled metadata", () => {

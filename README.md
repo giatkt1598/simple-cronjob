@@ -308,13 +308,19 @@ Cron fields use the following order:
 minute hour day-of-month month day-of-week
 ```
 
-The parser supports wildcards (`*`), lists, ranges, and steps. For example:
+The parser supports numeric wildcards (`*`), lists, ranges, and steps. Sunday can be written as either `0` or `7`.
+
+When both `day-of-month` and `day-of-week` are restricted, the expression matches when either field matches, following common Vixie cron behavior. If one of those fields is `*`, the other restricted field controls the day match.
+
+For example:
 
 ```text
 */5 12-13 * * 1,3
 ```
 
 This expression matches every five minutes during hours 12 and 13 on Mondays and Wednesdays.
+
+The implementation currently does not support named values such as `MON` or `JAN`.
 
 ## Security and Configuration Notes
 
