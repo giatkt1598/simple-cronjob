@@ -1,5 +1,5 @@
 import { build } from "esbuild";
-import { mkdir, rm } from "node:fs/promises";
+import { copyFile, mkdir, rm } from "node:fs/promises";
 
 await rm("dist", { recursive: true, force: true });
 await mkdir("dist", { recursive: true });
@@ -16,6 +16,8 @@ await build({
   sourcemap: true,
   logLevel: "info",
 });
+
+await copyFile("scripts/run-job.vbs", "dist/run-job.vbs");
 
 await build({
   entryPoints: ["src/cronjobs/*.cronjob.ts"],

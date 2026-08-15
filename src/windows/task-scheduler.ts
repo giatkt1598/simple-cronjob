@@ -23,7 +23,9 @@ export class WindowsTaskScheduler implements TaskScheduler {
   private async createOrUpdate(job: RegisteredCronJob, projectRoot: string, nodePath: string): Promise<void> {
     const taskName = `${TASK_PREFIX}${job.id}`;
     const scriptPath = `${projectRoot}\\dist\\index.js`;
-    const action = `"${nodePath}" "${scriptPath}" run --job "${job.id}"`;
+    const launcherPath = `${projectRoot}\\dist\\run-job.vbs`;
+    const wscriptPath = `${process.env.SystemRoot ?? "C:\\Windows"}\\System32\\wscript.exe`;
+    const action = `"${wscriptPath}" "${launcherPath}" "${nodePath}" "${scriptPath}" "${job.id}"`;
     const user = `${process.env.USERDOMAIN ?? ""}\\${process.env.USERNAME ?? ""}`.replace(/^\\/u, "");
     await execFileAsync("schtasks.exe", ["/Create", "/SC", "MINUTE", "/MO", "1", "/TN", taskName, "/TR", action, "/RU", user, "/IT", "/F"], { windowsHide: true });
   }
