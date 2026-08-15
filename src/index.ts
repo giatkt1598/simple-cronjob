@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 import { discoverCronJobs } from "./core/discovery.js";
 import { JobLogger } from "./core/logger.js";
 import { runJob, shouldRun } from "./core/runner.js";
+import { parseStartAt } from "./core/start-at.js";
 import { WindowsTaskScheduler } from "./windows/task-scheduler.js";
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -17,7 +18,7 @@ async function main(): Promise<void> {
     return;
   }
   if (command === "list") {
-    for (const job of jobs) console.log(`${job.id}\t${job.enabled ? "enabled" : "disabled"}\t${job.schedule}\t${job.description}`);
+    for (const job of jobs) console.log(`${job.id}\t${job.enabled ? "enabled" : "disabled"}\t${job.schedule}\t${job.startAt ?? "immediate"}\t${job.stopAt ?? "none"}\t${job.description}`);
     return;
   }
   if (command === "register") {
@@ -30,6 +31,10 @@ async function main(): Promise<void> {
     const job = jobs.find((candidate) => candidate.id === jobId);
     if (!job) throw new Error(`Unknown cronjob "${jobId ?? ""}".`);
     const now = new Date();
+    if (job.stopAt && !parseStartAt(job.stopAt).isAfter(now)) {
+      await new WindowsTaskScheduler().remove(job.id);
+      return;
+    }
     if (!shouldRun(job, now)) return;
     await runJob(job, projectRoot, now, new JobLogger(projectRoot, job.id));
     return;

@@ -11,11 +11,16 @@
     "validate": "npm run build && node dist/index.js validate",
     "test": "vitest run"
   },
-  "engines": { "node": ">=18" },
+  "engines": {
+    "node": ">=18"
+  },
   "devDependencies": {
     "@types/node": "^22.0.0",
     "esbuild": "^0.25.0",
     "typescript": "^6.0.0",
     "vitest": "^3.0.0"
+  },
+  "dependencies": {
+    "dayjs": "^1.11.21"
   }
 }

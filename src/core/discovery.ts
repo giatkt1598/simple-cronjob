@@ -3,6 +3,7 @@ import { basename, join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { CronExpression } from "./cron.js";
 import { getCronJobOptions } from "./decorator.js";
+import { normalizeStartAt, parseStartAt } from "./start-at.js";
 import type { CronJobConstructor, RegisteredCronJob } from "./types.js";
 
 export async function discoverCronJobs(directory: string): Promise<RegisteredCronJob[]> {
@@ -25,11 +26,18 @@ export async function discoverCronJobs(directory: string): Promise<RegisteredCro
     const options = getCronJobOptions(constructor);
     if (!options?.description.trim()) throw new Error(`Cronjob "${id}" needs a description.`);
     new CronExpression(options.schedule);
+    const startAt = normalizeStartAt(options.startAt);
+    const stopAt = normalizeStartAt(options.stopAt);
+    if (startAt && stopAt && !parseStartAt(stopAt).isAfter(parseStartAt(startAt))) {
+      throw new Error(`Cronjob "${id}" must have stopAt after startAt.`);
+    }
     jobs.push({
       id,
       modulePath: join(directory, fileName),
       description: options.description.trim(),
       schedule: options.schedule.trim(),
+      startAt,
+      stopAt,
       enabled: !fileInfo.disabled && options.enabled !== false,
       parallel: options.parallel === true,
       constructor,

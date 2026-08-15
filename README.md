@@ -15,14 +15,16 @@ Yêu cầu Node.js 18+ và Windows Task Scheduler.
 Tạo file mới trong `src/cronjobs/` với suffix `.cronjob.ts`:
 
 ```ts
-import { CronJob } from "../src/core/decorator.js";
-import type { CronJobContext, CronJobHandler } from "../src/core/types.js";
+import { CronJob } from "../core/decorator.js";
+import type { CronJobContext, CronJobHandler } from "../core/types.js";
 
 @CronJob({
   description: "Backup database mỗi 15 phút",
   schedule: "*/15 * * * *",
   enabled: true,
   parallel: false,
+  startAt: "2026-08-16 09:00:00",
+  stopAt: "2026-08-30 18:00:00",
 })
 export class BackupDatabaseJob implements CronJobHandler {
   async execute(context: CronJobContext): Promise<void> {
@@ -37,6 +39,10 @@ Job id được lấy từ tên file: `backup-database.cronjob.ts` trở thành 
 `enabled` mặc định là `true`. Đặt `enabled: false` để tạm ngừng job; job vẫn được validate và hiển thị trong `list`, nhưng Task Scheduler task tương ứng sẽ không được tạo hoặc sẽ bị xóa khi chạy reconciliation.
 
 `parallel` mặc định là `false`. Khi `parallel: false`, job mới sẽ bị skip nếu instance trước đó chưa hoàn tất. Đặt `parallel: true` nếu muốn cho phép nhiều process của cùng job chạy song song; Task Scheduler sẽ dùng `MultipleInstancesPolicy=Parallel` cho job đó.
+
+`startAt` không bắt buộc và dùng format `YYYY-MM-DD HH:mm:ss` theo local timezone của Windows. Trước thời điểm này, Task Scheduler không trigger job và lệnh chạy thủ công cũng không execute job.
+
+`stopAt` không bắt buộc và dùng cùng format. Khi đến hoặc quá thời điểm này, job không execute nữa; task tương ứng sẽ được remove ở lần trigger kế tiếp hoặc trong lần `npm run start` tiếp theo. `stopAt` phải sau `startAt` nếu cả hai cùng được khai báo. Source file không bị xóa.
 
 Cậu cũng có thể disable job bằng cách thêm `_` ở đầu tên file: `_backup-database.cronjob.ts`. Job id vẫn là `backup-database`, vì vậy `npm run start` sẽ xóa đúng task cũ `SimpleCronJob\backup-database` nếu task đó đang tồn tại.
 

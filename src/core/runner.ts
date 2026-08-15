@@ -1,12 +1,19 @@
 import { CronExpression } from "./cron.js";
 import { JobLock } from "./job-lock.js";
 import { JobLogger } from "./logger.js";
+import { parseStartAt } from "./start-at.js";
 import type { CronJobLogger, RegisteredCronJob } from "./types.js";
 
 export type RunJobResult = "completed" | "skipped";
 
 export function shouldRun(job: RegisteredCronJob, now: Date): boolean {
+  if (job.startAt && dayjsIsBeforeStartAt(job.startAt, now)) return false;
+  if (job.stopAt && !parseStartAt(job.stopAt).isAfter(now)) return false;
   return new CronExpression(job.schedule).matches(now);
+}
+
+function dayjsIsBeforeStartAt(startAt: string, now: Date): boolean {
+  return parseStartAt(startAt).isAfter(now);
 }
 
 export async function runJob(job: RegisteredCronJob, projectRoot: string, scheduledAt = new Date(), logger?: CronJobLogger): Promise<RunJobResult> {

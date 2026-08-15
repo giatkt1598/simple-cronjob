@@ -7,6 +7,7 @@ import { CronJob, getCronJobOptions } from "../src/core/decorator.js";
 import { parseCronJobFileName } from "../src/core/discovery.js";
 import { JobLogger } from "../src/core/logger.js";
 import { JobLock } from "../src/core/job-lock.js";
+import { normalizeStartAt } from "../src/core/start-at.js";
 
 describe("CronExpression", () => {
   it("matches lists, ranges and steps", () => {
@@ -38,6 +39,12 @@ describe("CronExpression", () => {
     class ParallelJob {}
 
     expect(getCronJobOptions(ParallelJob as never)?.parallel).toBe(true);
+  });
+
+  it("validates startAt with the strict dayjs format", () => {
+    expect(normalizeStartAt("2026-08-16 09:00:00")).toBe("2026-08-16 09:00:00");
+    expect(() => normalizeStartAt("2026-08-16 9:00:00")).toThrow();
+    expect(normalizeStartAt("2026-08-30 18:00:00")).toBe("2026-08-30 18:00:00");
   });
 
   it("treats a leading underscore as a disabled filename convention", () => {
