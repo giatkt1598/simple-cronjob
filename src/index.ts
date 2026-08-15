@@ -5,6 +5,7 @@ import { discoverCronJobs } from "./core/discovery.js";
 import { JobLogger } from "./core/logger.js";
 import { runJob, shouldRun } from "./core/runner.js";
 import { parseStartAt } from "./core/start-at.js";
+import type { RegisteredCronJob } from "./core/types.js";
 import { WindowsTaskScheduler } from "./core/windows-task-scheduler.js";
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -25,10 +26,16 @@ async function main(): Promise<void> {
     return;
   }
   if (command === "register") {
+    const now = new Date();
+    const registerableJobs = jobs.filter((job) => isRegisterable(job, now));
+    const skippedJobs = jobs.filter((job) => !isRegisterable(job, now));
     await new WindowsTaskScheduler().reconcile(jobs, projectRoot);
-    console.log(
-      `Registered ${jobs.length} cronjob(s) into Windows Task Scheduler.`,
-    );
+    console.log(`Registered ${registerableJobs.length} cronjob(s):`);
+    printNumberedJobs(registerableJobs, (job) => job.id);
+    if (skippedJobs.length > 0) {
+      console.log(`Skipped ${skippedJobs.length} cronjob(s):`);
+      printNumberedJobs(skippedJobs, formatSkippedJob);
+    }
     return;
   }
   if (command === "run") {
@@ -61,6 +68,23 @@ async function main(): Promise<void> {
   throw new Error(
     `Unknown command "${command}". Use list, validate, register, run --job <id> or trigger <id>.`,
   );
+}
+
+function isRegisterable(job: RegisteredCronJob, now: Date): boolean {
+  return job.enabled && (!job.stopAt || parseStartAt(job.stopAt).isAfter(now));
+}
+
+function printNumberedJobs(jobs: RegisteredCronJob[], format: (job: RegisteredCronJob) => string): void {
+  if (jobs.length === 0) {
+    console.log("  (none)");
+    return;
+  }
+  jobs.forEach((job, index) => console.log(`  ${index + 1}. ${format(job)}`));
+}
+
+function formatSkippedJob(job: RegisteredCronJob): string {
+  const reason = !job.enabled ? "disabled" : "stopAt reached";
+  return `${job.id} (${reason})`;
 }
 
 main().catch((error: unknown) => {
