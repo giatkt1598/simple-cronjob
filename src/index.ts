@@ -39,7 +39,20 @@ async function main(): Promise<void> {
     await runJob(job, projectRoot, now, new JobLogger(projectRoot, job.id));
     return;
   }
-  throw new Error(`Unknown command "${command}". Use list, validate, register or run --job <id>.`);
+  if (command === "trigger") {
+    const optionIndex = process.argv.indexOf("--job");
+    const jobId = optionIndex >= 0 ? process.argv[optionIndex + 1] : process.argv[3];
+    const job = jobs.find((candidate) => candidate.id === jobId);
+    if (!job) throw new Error(`Unknown cronjob "${jobId ?? ""}".`);
+    const now = new Date();
+    if (job.stopAt && !parseStartAt(job.stopAt).isAfter(now)) {
+      await new WindowsTaskScheduler().remove(job.id);
+      return;
+    }
+    await runJob(job, projectRoot, now, new JobLogger(projectRoot, job.id));
+    return;
+  }
+  throw new Error(`Unknown command "${command}". Use list, validate, register, run --job <id> or trigger <id>.`);
 }
 
 main().catch((error: unknown) => {

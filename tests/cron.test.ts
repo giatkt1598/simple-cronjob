@@ -62,7 +62,7 @@ describe("CronExpression", () => {
     const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
     const date = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
     const content = await readFile(join(root, "logs", "backup", month, `${date}.log`), "utf8");
-    expect(content).toMatch(/\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3} [+-]\d{2}:\d{2} INF\] Backup completed \{JobId="backup", Count=2\}/u);
+    expect(content).toMatch(/\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3}\] \[INFO\] Backup completed \{JobId="backup", Count=2\}/u);
     await rm(root, { recursive: true, force: true });
   });
 

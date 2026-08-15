@@ -17,9 +17,9 @@ export interface CommandResult {
 export async function runCommand(command: string, options: RunCommandOptions = {}): Promise<CommandResult> {
   const execOptions: ExecOptions & { async: false } = {
     async: false,
+    cwd: options.cwd ?? process.cwd(),
     silent: options.silent ?? true,
   };
-  if (options.cwd !== undefined) execOptions.cwd = options.cwd;
   if (options.env !== undefined) execOptions.env = options.env;
   if (options.timeoutMs !== undefined) execOptions.timeout = options.timeoutMs;
   const result = shell.exec(command, {

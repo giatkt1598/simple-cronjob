@@ -2,7 +2,7 @@ import { appendFile, mkdir } from "node:fs/promises";
 import { join } from "node:path";
 import type { CronJobLogger, LogProperties } from "./types.js";
 
-type LogLevel = "TRC" | "DBG" | "INF" | "WRN" | "ERR" | "FTL";
+type LogLevel = "TRACE" | "DEBUG" | "INFO" | "WARN" | "ERROR" | "FATAL";
 
 export class JobLogger implements CronJobLogger {
   private pendingWrite: Promise<void> = Promise.resolve();
@@ -13,27 +13,27 @@ export class JobLogger implements CronJobLogger {
   ) {}
 
   trace(message: string, properties?: LogProperties): void {
-    this.write("TRC", message, undefined, properties);
+    this.write("TRACE", message, undefined, properties);
   }
 
   debug(message: string, properties?: LogProperties): void {
-    this.write("DBG", message, undefined, properties);
+    this.write("DEBUG", message, undefined, properties);
   }
 
   info(message: string, properties?: LogProperties): void {
-    this.write("INF", message, undefined, properties);
+    this.write("INFO", message, undefined, properties);
   }
 
   warn(message: string, properties?: LogProperties): void {
-    this.write("WRN", message, undefined, properties);
+    this.write("WARN", message, undefined, properties);
   }
 
   error(message: string, error?: unknown, properties?: LogProperties): void {
-    this.write("ERR", message, error, properties);
+    this.write("ERROR", message, error, properties);
   }
 
   fatal(message: string, error?: unknown, properties?: LogProperties): void {
-    this.write("FTL", message, error, properties);
+    this.write("FATAL", message, error, properties);
   }
 
   async flush(): Promise<void> {
@@ -69,7 +69,7 @@ export class JobLogger implements CronJobLogger {
 }
 
 function formatPrefix(date: Date, level: LogLevel): string {
-  return `[${formatDateTime(date)} ${formatOffset(date)} ${level}]`;
+  return `[${formatDateTime(date)}] [${level}]`;
 }
 
 function formatDateTime(date: Date): string {
@@ -82,13 +82,6 @@ function formatDate(date: Date): string {
 
 function formatMonth(date: Date): string {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}`;
-}
-
-function formatOffset(date: Date): string {
-  const minutes = -date.getTimezoneOffset();
-  const sign = minutes >= 0 ? "+" : "-";
-  const absolute = Math.abs(minutes);
-  return `${sign}${pad(Math.floor(absolute / 60))}:${pad(absolute % 60)}`;
 }
 
 function formatProperties(properties?: LogProperties): string {

@@ -51,7 +51,7 @@ Cậu cũng có thể disable job bằng cách thêm `_` ở đầu tên file: `
 Mỗi job nhận được `context.logger`. Logger chỉ ghi vào file plain text theo format Serilog; job chạy trong Task Scheduler sẽ không tạo log output trên console:
 
 ```text
-[2026-08-15 11:05:07.123 +07:00 INF] Job completed {JobId="hello"}
+[2026-08-15 20:07:03.829] [INFO] Job completed {JobId="hello"}
 ```
 
 Log được lưu tại:
@@ -68,7 +68,9 @@ Các level được hỗ trợ: `trace`, `debug`, `info`, `warn`, `error`, `fata
 npm run validate
 npm run list
 npm run start
+npm run trigger-job -- giatk-version
 node dist/index.js run --job hello
+node dist/index.js trigger giatk-version
 ```
 
 `npm run start` sẽ type-check, build, discover job và reconcile các task có prefix `SimpleCronJob` trong Windows Task Scheduler. Mỗi task được trigger mỗi phút; application tự kiểm tra 5-field cron expression trước khi execute.
@@ -96,6 +98,8 @@ await writeJson("tmp/result.json", { command, status: response.status });
 Utility v1 gồm `runCommand`, `assertCommandSuccess`, `retry`, `withTimeout`, `requestText`, `requestJson`, `ensureDirectory`, `fileExists`, `readJson`, `writeJson`, `getEnv`, `requireEnv` và `isWindows`.
 
 Task Scheduler chạy qua `wscript.exe` hidden launcher để Node job chạy nền và không bật console window. Launcher vẫn giữ nguyên user context, working directory và exit code của Node process.
+
+`trigger-job` dùng để chạy thủ công ngay lập tức và bỏ qua cron schedule hiện tại. Job vẫn dùng process lock/`parallel`; job đã quá `stopAt` sẽ không được chạy.
 
 Task chạy bằng user hiện tại ở chế độ logged-on. Không hardcode secrets trong source; dùng environment variables hoặc configuration của project.
 
