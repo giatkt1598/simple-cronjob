@@ -8,11 +8,12 @@ const MESSAGE = "Simple Cronjob scheduled notification";
 @CronJob({
   description: "Send a scheduled text message to Microsoft Teams.",
   schedule: "0 * * * *",
-  enabled: false,
 })
 export class MsTeamsNotificationSampleJob implements CronJobHandler {
   async execute(context: CronJobContext): Promise<void> {
-    await new MsTeamsService({ webhookUrl: MS_TEAMS_WEBHOOK_URL }).sendText(MESSAGE);
+    await new MsTeamsService({ webhookUrl: MS_TEAMS_WEBHOOK_URL }).sendText(
+      MESSAGE,
+    );
     context.logger.info("Microsoft Teams notification sent");
   }
 }
