@@ -5,19 +5,11 @@ import { join } from "node:path";
 import { promisify } from "node:util";
 import dayjs from "dayjs";
 import { parseStartAt } from "./start-at.js";
+import type { TaskScheduler } from "./task-scheduler.js";
 import type { RegisteredCronJob } from "./types.js";
 
 const execFileAsync = promisify(execFile);
 const TASK_PREFIX = "\\SimpleCronJob\\";
-
-export interface TaskScheduler {
-  /** Reconciles the desired cron jobs with managed Windows tasks. */
-  reconcile(
-    jobs: RegisteredCronJob[],
-    projectRoot: string,
-    nodePath?: string,
-  ): Promise<void>;
-}
 
 /** Windows Task Scheduler adapter used by the application registration flow. */
 export class WindowsTaskScheduler implements TaskScheduler {

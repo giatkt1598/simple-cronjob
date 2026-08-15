@@ -1,14 +1,14 @@
 # Simple Cronjob
 
-Simple Cronjob is a TypeScript-based Windows automation tool for running scheduled jobs through Windows Task Scheduler.
+Simple Cronjob is a TypeScript-based automation tool for running scheduled jobs through Windows Task Scheduler or a Linux user's `crontab`.
 
-A cron job is a regular TypeScript class. You describe its schedule and runtime behavior with the `@CronJob` decorator, then run the application to discover, validate, and reconcile the jobs registered in Windows Task Scheduler.
+A cron job is a regular TypeScript class. You describe its schedule and runtime behavior with the `@CronJob` decorator, then run the application to discover, validate, and reconcile jobs registered in the operating system scheduler.
 
 ## Features
 
 - Define jobs as TypeScript classes.
 - Use familiar five-field cron expressions.
-- Register and reconcile jobs in Windows Task Scheduler.
+- Register and reconcile jobs in Windows Task Scheduler or Linux `crontab`.
 - Run arbitrary Node.js and CLI automation, including database backups, HTTP calls, notifications, and file operations.
 - Support enabled/disabled jobs and filename-based disabling.
 - Prevent overlapping executions by default with a process lock.
@@ -20,7 +20,7 @@ A cron job is a regular TypeScript class. You describe its schedule and runtime 
 
 ## Requirements
 
-- Windows with Windows Task Scheduler.
+- Windows with Windows Task Scheduler, or Linux with `crontab`/`cron`.
 - Node.js 18 or later.
 - npm.
 
@@ -100,7 +100,7 @@ npm run validate
 # List discovered jobs and their configuration.
 npm run list
 
-# Build the project and register jobs in Windows Task Scheduler.
+# Build the project and register jobs in the operating system scheduler.
 npm run start
 
 # Build the project and trigger one job immediately.
@@ -113,13 +113,15 @@ node dist/index.js run --job hello
 node dist/index.js trigger giatk-version
 ```
 
-`npm run start` type-checks the project, builds the application, discovers cron jobs, and reconciles tasks with the `SimpleCronJob` prefix in Windows Task Scheduler.
+`npm run start` type-checks the project, builds the application, discovers cron jobs, and reconciles tasks with the operating system scheduler.
 
-The current scheduler creates a Task Scheduler trigger every minute. The application evaluates the five-field cron expression before executing the job.
+On Windows, the scheduler creates a Task Scheduler trigger every minute. On Linux, it creates a managed block in the current user's `crontab` with one entry per active job. In both cases, the application evaluates the five-field cron expression before executing the job.
 
 The `trigger-job` command bypasses the cron schedule, but it still respects process locking and `parallel`. A job past its `stopAt` value is not executed.
 
-## Windows Task Scheduler
+## Operating System Schedulers
+
+### Windows Task Scheduler
 
 Jobs run under the current logged-on Windows user. The scheduler uses a hidden `wscript.exe` launcher so Node.js jobs can run in the background without opening a console window. The launcher preserves the user context, working directory, and Node.js process exit code.
 
@@ -132,6 +134,26 @@ After adding or changing a cron job, run `npm run start` to reconcile the regist
 ### Registered SimpleCronJob Tasks
 
 ![Registered SimpleCronJob tasks in Windows Task Scheduler](docs/screenshots/windows-task-scheduler.png)
+
+### Linux crontab
+
+Linux support uses the current user's crontab and does not require root privileges. Make sure `cron` or `cronie` is installed and running, then run:
+
+```bash
+npm install
+npm run start
+crontab -l
+```
+
+The application manages only the following block and preserves unrelated crontab entries:
+
+```cron
+# BEGIN SIMPLE-CRONJOB
+* * * * * '/usr/bin/node' '/opt/simple-cronjob/dist/index.js' run --job 'hello' # SIMPLE-CRONJOB:hello
+# END SIMPLE-CRONJOB
+```
+
+The Linux scheduler triggers every active job once per minute. Cron matching, `startAt`, `stopAt`, and process locking remain handled by the application. Run `npm run start` again after adding, renaming, disabling, or expiring a job.
 
 ## Logging
 

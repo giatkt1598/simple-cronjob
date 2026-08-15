@@ -5,8 +5,8 @@ import { discoverCronJobs } from "./core/discovery.js";
 import { JobLogger } from "./core/logger.js";
 import { runJob, shouldRun } from "./core/runner.js";
 import { parseStartAt } from "./core/start-at.js";
+import { createTaskScheduler } from "./core/task-scheduler.js";
 import type { RegisteredCronJob } from "./core/types.js";
-import { WindowsTaskScheduler } from "./core/windows-task-scheduler.js";
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const jobsDirectory = join(dirname(fileURLToPath(import.meta.url)), "cronjobs");
@@ -29,7 +29,7 @@ async function main(): Promise<void> {
     const now = new Date();
     const registerableJobs = jobs.filter((job) => isRegisterable(job, now));
     const skippedJobs = jobs.filter((job) => !isRegisterable(job, now));
-    await new WindowsTaskScheduler().reconcile(jobs, projectRoot);
+    await createTaskScheduler().reconcile(jobs, projectRoot);
     console.log(`Registered ${registerableJobs.length} cronjob(s):`);
     printNumberedJobs(registerableJobs, (job) => job.id);
     if (skippedJobs.length > 0) {
@@ -44,7 +44,7 @@ async function main(): Promise<void> {
     if (!job) throw new Error(`Unknown cronjob "${jobId ?? ""}".`);
     const now = new Date();
     if (job.stopAt && !parseStartAt(job.stopAt).isAfter(now)) {
-      await new WindowsTaskScheduler().remove(job.id);
+      await createTaskScheduler().remove(job.id);
       return;
     }
     if (!shouldRun(job, now)) return;
@@ -59,7 +59,7 @@ async function main(): Promise<void> {
     if (!job) throw new Error(`Unknown cronjob "${jobId ?? ""}".`);
     const now = new Date();
     if (job.stopAt && !parseStartAt(job.stopAt).isAfter(now)) {
-      await new WindowsTaskScheduler().remove(job.id);
+      await createTaskScheduler().remove(job.id);
       return;
     }
     await runJob(job, projectRoot, now, new JobLogger(projectRoot, job.id));
